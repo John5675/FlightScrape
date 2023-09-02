@@ -2,6 +2,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from datetime import datetime
+from selenium.common.exceptions import NoSuchElementException
 import booking.constants as const
 import os
 import time
@@ -54,3 +56,54 @@ class Booking(webdriver.Chrome):
         )
 
         airport.click()
+
+    def select_dates(self, check_in_date, check_out_date):
+        search_field = self.find_element(
+            By.CSS_SELECTOR, 'button[data-ui-name="button_date_segment_0"]'
+        )
+        search_field.click()
+        check_in_split = check_in_date.split()
+        check_out_split = check_out_date.split()
+        # print(check_in_split[1])
+
+        while True:
+            element = self.find_element(By.CSS_SELECTOR, 'h3[aria-live="polite"]')
+            inner_html = element.get_attribute("innerHTML")
+            inner_html = inner_html.split()
+            print(inner_html[0])
+            next_button = self.find_element(
+                By.CLASS_NAME, "Calendar-module__control--next___C2mkG"
+            )
+            if inner_html[0] != check_in_split[1]:
+                next_button.click()
+            if inner_html[0] == check_in_split[1]:
+                break
+
+        check_in_element = self.find_element(
+            By.CSS_SELECTOR, f'span[aria-label="{check_in_date}"]'
+        )
+        check_in_element.click()
+
+        while True:
+            element = self.find_element(By.CSS_SELECTOR, 'h3[aria-live="polite"]')
+            inner_html = element.get_attribute("innerHTML")
+            inner_html = inner_html.split()
+            print(inner_html[0])
+            next_button = self.find_element(
+                By.CLASS_NAME, "Calendar-module__control--next___C2mkG"
+            )
+            if inner_html[0] != check_out_split[1]:
+                next_button.click()
+            if inner_html[0] == check_out_split[1]:
+                break
+
+        check_out_element = self.find_element(
+            By.CSS_SELECTOR, f'span[aria-label="{check_out_date}"]'
+        )
+        check_out_element.click()
+
+    def search_button(self):
+        element = self.find_element(
+            By.CSS_SELECTOR, 'button[data-ui-name="button_search_submit"]'
+        )
+        element.click()
