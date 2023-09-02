@@ -1,7 +1,10 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import booking.constants as const
 import os
+import time
 
 
 class Booking(webdriver.Chrome):
@@ -20,16 +23,34 @@ class Booking(webdriver.Chrome):
         if self.teardown:
             self.quit()
 
+    def dismiss_sign_in_pop_up(self):
+        try:
+            dismiss_button = WebDriverWait(self).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, 'button[aria-label="Dismiss sign-in info."]')
+                )
+            )
+            dismiss_button.click()
+        except:
+            print("Sign-in pop-up did not appear or was already closed.")
+
     def land_first_page(self):
         self.get(const.BASE_URL)
+        self.dismiss_sign_in_pop_up()
 
-    def change_currency(self, currency=None):
-        currency_element = self.find_element(
-            By.CSS_SELECTOR, 'button[data-testid="header-currency-picker-trigger"]'
+    def select_airport(self, place_to_go):
+        search_field = self.find_element(
+            By.CSS_SELECTOR, 'button[data-ui-name="input_location_to_segment_0"]'
         )
-        currency_element.click()
-        selected_currency_element = self.find_element(
-            By.CSS_SELECTOR,
-            'button[class="a83ed08757 aee4999c52 ffc914f84a c39dd9701b ac7953442b abced745f1"]',
+        search_field.click()
+        input_field = self.find_element(
+            By.CSS_SELECTOR, 'input[placeholder="Airport or city"]'
         )
-        selected_currency_element.click()
+        input_field.click()
+        input_field.send_keys(place_to_go)
+
+        airport = self.find_element(
+            By.CSS_SELECTOR, f'input[name="AIRPORT{place_to_go}"]'
+        )
+
+        airport.click()
