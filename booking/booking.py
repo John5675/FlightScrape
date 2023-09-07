@@ -7,6 +7,9 @@ from selenium.common.exceptions import NoSuchElementException
 import booking.constants as const
 import os
 import time
+from booking.booking_report import BookingReport
+from datetime import datetime, timedelta
+from prettytable import PrettyTable
 
 
 class Booking(webdriver.Chrome):
@@ -20,6 +23,7 @@ class Booking(webdriver.Chrome):
         super(Booking, self).__init__(options=options)
         self.implicitly_wait(5)
         self.maximize_window()
+        self.report_list = []
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.teardown:
@@ -64,13 +68,11 @@ class Booking(webdriver.Chrome):
         search_field.click()
         check_in_split = check_in_date.split()
         check_out_split = check_out_date.split()
-        # print(check_in_split[1])
 
         while True:
             element = self.find_element(By.CSS_SELECTOR, 'h3[aria-live="polite"]')
             inner_html = element.get_attribute("innerHTML")
             inner_html = inner_html.split()
-            print(inner_html[0])
             next_button = self.find_element(
                 By.CLASS_NAME, "Calendar-module__control--next___C2mkG"
             )
@@ -88,7 +90,6 @@ class Booking(webdriver.Chrome):
             element = self.find_element(By.CSS_SELECTOR, 'h3[aria-live="polite"]')
             inner_html = element.get_attribute("innerHTML")
             inner_html = inner_html.split()
-            print(inner_html[0])
             next_button = self.find_element(
                 By.CLASS_NAME, "Calendar-module__control--next___C2mkG"
             )
@@ -107,3 +108,42 @@ class Booking(webdriver.Chrome):
             By.CSS_SELECTOR, 'button[data-ui-name="button_search_submit"]'
         )
         element.click()
+
+    def report_results(self):
+        time.sleep(8)
+        flight_elements = self.find_elements(
+            By.CLASS_NAME, "css-17f6u3r-searchResultsList"
+        )
+        element = flight_elements[0]
+        report = BookingReport(element)
+        report_title = report.pull_titles()
+        print(report_title)
+        self.report_list.append(report_title)
+
+    def increment_date_and_search(self, check_in_date_str, check_out_date_str):
+        date_format = "%d %B %Y"
+
+        check_in_date = datetime.strptime(check_in_date_str, date_format)
+        check_out_date = datetime.strptime(check_out_date_str, date_format)
+
+        new_check_in_date = check_in_date + timedelta(days=1)
+        new_check_out_date = check_out_date + timedelta(days=1)
+
+        new_check_in_str = new_check_in_date.strftime(date_format)
+        new_check_out_str = new_check_out_date.strftime(date_format)
+
+        if new_check_in_str[0] == "0":
+            new_check_in_str = new_check_in_str[1:]
+        if new_check_out_str[0] == "0":
+            new_check_out_str = new_check_out_str[1:]
+        self.select_dates(new_check_in_str, new_check_out_str)
+        self.search_button()
+
+        return new_check_in_str, new_check_out_str
+
+    def get_report_list(self):
+        table = PrettyTable(
+            field_names=["Airline", "Price", "Departure Date", "Return Date"]
+        )
+        table.add_rows(self.report_list)
+        print(table)
